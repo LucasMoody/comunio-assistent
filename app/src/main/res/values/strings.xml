@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Comunio Assistent</string>
+
+
+    <string name="title_section1">Section 1</string>
+    <string name="title_section2">Section 2</string>
+    <string name="title_section3">Section 3</string>
+
+    <string name="hello_world">Hello world!</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="market_value">Marktwert:</string>
+    <string name="points">Punkte:</string>
+    <string name="recommendedPrice">Richtpreis:</string>
+    <string name="noValue">\?</string>
+    <string name="progress_message">Die Daten werden geladen</string>
+    <string name="refresh_menu_item_name">Aktualisieren</string>
+    <string name="add_comunio_menu_item_name">Comunio hinzufügen</string>
+    <string name="dialog_add_comunio_edittext">Benutzername</string>
+    <string name="dialog_add_comunio_ok_btn">Hinzufügen</string>
+    <string name="dialog_add_comunio_cancel_btn">Abbrechen</string>
+    <string name="dialog_add_comunio_user_not_found">Es konnte kein Comunio Benutzer mit diesem Namen gefunden werden</string>
+</resources>
