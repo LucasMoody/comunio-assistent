@@ -1,10 +1,10 @@
-package lucaspradel.de.comunioassistent.common;
+package de.lucaspradel.comunioassistent.common;
 
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 
-import lucaspradel.de.comunioassistent.R;
+import de.lucaspradel.comunioassistent.R;
 
 /**
  * Created by lucas on 01.04.15.

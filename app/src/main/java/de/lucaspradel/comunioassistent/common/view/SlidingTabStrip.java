@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package lucaspradel.de.comunioassistent.common.view;
+package de.lucaspradel.comunioassistent.common.view;
 
 import android.R;
 import android.content.Context;

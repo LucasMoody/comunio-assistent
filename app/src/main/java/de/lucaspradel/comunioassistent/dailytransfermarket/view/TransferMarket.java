@@ -1,10 +1,8 @@
-package lucaspradel.de.comunioassistent.dailytransfermarket.view;
+package de.lucaspradel.comunioassistent.dailytransfermarket.view;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,17 +10,14 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.List;
 
-import lucaspradel.de.comunioassistent.R;
+import de.lucaspradel.comunioassistent.R;
 
-import lucaspradel.de.comunioassistent.dailytransfermarket.DailyTransferMarketActivity;
-import lucaspradel.de.comunioassistent.dailytransfermarket.dummy.DummyContent;
-import lucaspradel.de.comunioassistent.dailytransfermarket.helper.PlayerInfo;
-import lucaspradel.de.comunioassistent.dailytransfermarket.manager.DailyTransferMarketManager;
+import de.lucaspradel.comunioassistent.dailytransfermarket.helper.PlayerInfo;
+import de.lucaspradel.comunioassistent.dailytransfermarket.manager.DailyTransferMarketManager;
 
 /**
  * A fragment representing a list of Items.
@@ -86,6 +81,24 @@ public class TransferMarket extends Fragment implements AbsListView.OnItemClickL
         comunioId = bundle.getInt(ARG_COMUNIO_ID);
         days = bundle.getInt(ARG_DAYS);
         onlyFromComputer = bundle.getBoolean(ARG_ONLY_FROM_COMPUTER);
+        mAdapter = new PlayerInfoListAdapter(getActivity());
+        dailyTransferManager = new DailyTransferMarketManager().
+                setDailyTransferMarketFinishedListener(
+                        new DailyTransferMarketManager.DailyTransferMarketFinishedListener() {
+                            @Override
+                            public void onDailyTransferMarketFinished(List<PlayerInfo> playerInfoList) {
+
+                                //mAdapter = new PlayerInfoListAdapter(getActivity(), playerInfoList);
+                                // Set the adapter
+                                mAdapter.setPlayerInfoList(playerInfoList);
+                                //mListView.setAdapter(mAdapter);
+                                // Set OnItemClickListener so we can be notified on item clicks
+
+                                progress.setVisibility(View.GONE);
+                            }
+                        });
+
+        dailyTransferManager.getDailyTransferMarket(String.valueOf(comunioId),days, onlyFromComputer);
     }
 
     @Override
@@ -94,22 +107,28 @@ public class TransferMarket extends Fragment implements AbsListView.OnItemClickL
         final View view = inflater.inflate(R.layout.fragment_playerinfo, container, false);
         mListView = (AbsListView) view.findViewById(R.id.players);
         progress = (LinearLayout) view.findViewById(R.id.ll_progress);
-        dailyTransferManager = new DailyTransferMarketManager().
+        /*dailyTransferManager = new DailyTransferMarketManager().
                 setDailyTransferMarketFinishedListener(
                         new DailyTransferMarketManager.DailyTransferMarketFinishedListener() {
             @Override
             public void onDailyTransferMarketFinished(List<PlayerInfo> playerInfoList) {
 
-                mAdapter = new PlayerInfoListAdapter(getActivity(), playerInfoList);
+                //mAdapter = new PlayerInfoListAdapter(getActivity(), playerInfoList);
                 // Set the adapter
+                mAdapter.setPlayerInfoList(playerInfoList);
                 ((AdapterView<ListAdapter>) mListView).setAdapter(mAdapter);
                 // Set OnItemClickListener so we can be notified on item clicks
                 mListView.setOnItemClickListener(TransferMarket.this);
                 progress.setVisibility(View.GONE);
             }
         });
-        progress.setVisibility(View.VISIBLE);
-        dailyTransferManager.getDailyTransferMarket(String.valueOf(comunioId),days, onlyFromComputer);
+        */
+        mListView.setAdapter(mAdapter);
+        mListView.setOnItemClickListener(TransferMarket.this);
+        if(!mAdapter.isDataLoaded()) {
+            progress.setVisibility(View.VISIBLE);
+        }
+        //dailyTransferManager.getDailyTransferMarket(String.valueOf(comunioId),days, onlyFromComputer);
         return view;
     }
 

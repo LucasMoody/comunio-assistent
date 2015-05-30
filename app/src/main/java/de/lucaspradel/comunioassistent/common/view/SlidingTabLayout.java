@@ -15,7 +15,7 @@
  */
 
 
-package lucaspradel.de.comunioassistent.common.view;
+package de.lucaspradel.comunioassistent.common.view;
 
 import android.content.Context;
 import android.graphics.Typeface;

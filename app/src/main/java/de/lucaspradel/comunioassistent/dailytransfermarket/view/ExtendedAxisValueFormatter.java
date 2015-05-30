@@ -1,4 +1,4 @@
-package lucaspradel.de.comunioassistent.dailytransfermarket.view;
+package de.lucaspradel.comunioassistent.dailytransfermarket.view;
 
 import lecho.lib.hellocharts.formatter.SimpleAxisValueFormatter;
 

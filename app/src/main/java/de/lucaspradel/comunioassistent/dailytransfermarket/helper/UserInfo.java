@@ -1,4 +1,4 @@
-package lucaspradel.de.comunioassistent.dailytransfermarket.helper;
+package de.lucaspradel.comunioassistent.dailytransfermarket.helper;
 
 import java.io.Serializable;
 

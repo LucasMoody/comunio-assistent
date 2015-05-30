@@ -1,4 +1,4 @@
-package lucaspradel.de.comunioassistent.dailytransfermarket.view;
+package de.lucaspradel.comunioassistent.dailytransfermarket.view;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -22,16 +22,16 @@ import lecho.lib.hellocharts.model.LineChartData;
 import lecho.lib.hellocharts.model.PointValue;
 import lecho.lib.hellocharts.model.Viewport;
 import lecho.lib.hellocharts.view.LineChartView;
-import lucaspradel.de.comunioassistent.R;
-import lucaspradel.de.comunioassistent.common.IconMapper;
-import lucaspradel.de.comunioassistent.dailytransfermarket.helper.PlayerInfo;
+import de.lucaspradel.comunioassistent.R;
+import de.lucaspradel.comunioassistent.common.IconMapper;
+import de.lucaspradel.comunioassistent.dailytransfermarket.helper.PlayerInfo;
 
 /**
  * Created by lucas on 01.04.15.
  */
 public class PlayerInfoListAdapter extends ArrayAdapter<PlayerInfo> {
 
-    private final List<PlayerInfo> playerInfoList;
+    private List<PlayerInfo> playerInfoList = new ArrayList<>();
 
     private class ViewHolder {
         private final TextView name;
@@ -98,9 +98,24 @@ public class PlayerInfoListAdapter extends ArrayAdapter<PlayerInfo> {
         playerInfoList = playerInfos;
     }
 
+    public PlayerInfoListAdapter(Context context) {
+        super(context, R.layout.transfermarket_player);
+        playerInfoList = new ArrayList<>();
+    }
+
+    public void setPlayerInfoList(List<PlayerInfo> playerInfoList) {
+        this.playerInfoList = playerInfoList;
+        addAll(playerInfoList);
+        notifyDataSetChanged();
+    }
+
     public void refreshAdapter() {
         clear();
         notifyDataSetChanged();
+    }
+
+    public boolean isDataLoaded() {
+        return playerInfoList.size()>0;
     }
 
     @Override

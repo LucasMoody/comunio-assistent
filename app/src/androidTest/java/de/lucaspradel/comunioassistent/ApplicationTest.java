@@ -1,4 +1,4 @@
-package lucaspradel.de.comunioassistent;
+package de.lucaspradel.comunioassistent;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

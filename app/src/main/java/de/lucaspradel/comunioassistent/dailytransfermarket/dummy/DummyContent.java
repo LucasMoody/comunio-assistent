@@ -1,4 +1,4 @@
-package lucaspradel.de.comunioassistent.dailytransfermarket.dummy;
+package de.lucaspradel.comunioassistent.dailytransfermarket.dummy;
 
 import android.support.v4.util.Pair;
 
@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import lucaspradel.de.comunioassistent.dailytransfermarket.helper.PlayerInfo;
+import de.lucaspradel.comunioassistent.dailytransfermarket.helper.PlayerInfo;
 
 /**
  * Helper class for providing sample content for user interfaces created by

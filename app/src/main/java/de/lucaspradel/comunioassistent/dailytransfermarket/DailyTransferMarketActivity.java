@@ -1,18 +1,15 @@
-package lucaspradel.de.comunioassistent.dailytransfermarket;
+package de.lucaspradel.comunioassistent.dailytransfermarket;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.StreamCorruptedException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -23,14 +20,14 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import lucaspradel.de.comunioassistent.R;
-import lucaspradel.de.comunioassistent.dailytransfermarket.helper.UserInfo;
-import lucaspradel.de.comunioassistent.dailytransfermarket.manager.DailyTransferMarketManager;
-import lucaspradel.de.comunioassistent.dailytransfermarket.view.TransferMarket;
+import de.lucaspradel.comunioassistent.R;
+import de.lucaspradel.comunioassistent.common.view.SlidingTabLayout;
+import de.lucaspradel.comunioassistent.dailytransfermarket.helper.UserInfo;
+import de.lucaspradel.comunioassistent.dailytransfermarket.manager.DailyTransferMarketManager;
+import de.lucaspradel.comunioassistent.dailytransfermarket.view.TransferMarket;
 
 
 public class DailyTransferMarketActivity extends ActionBarActivity implements TransferMarket.OnFragmentInteractionListener {
@@ -38,6 +35,8 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
     public static final String COMUNIO_IDS = "comunioIds";
     public static final String SEPARATOR = ",";
     public static final String COMUNIO_USER_INFOS_FILENAME = "comunioUserInfos";
+
+    private List<UserInfo> userInfos;
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
      * fragments for each of the sections. We use a
@@ -54,6 +53,7 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
     private ViewPager mViewPager;
 
     private DailyTransferMarketManager dailyTransferMarketManager;
+    private SlidingTabLayout mSlidingTabLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,7 +61,7 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
         setContentView(R.layout.activity_daily_transfer_market);
 
         dailyTransferMarketManager = new DailyTransferMarketManager();
-        List<UserInfo> userInfos = new ArrayList<>();
+        userInfos = new ArrayList<>();
         try {
             ObjectInputStream ois = new ObjectInputStream(openFileInput(COMUNIO_USER_INFOS_FILENAME));
             userInfos = (List<UserInfo>) ois.readObject();
@@ -77,6 +77,8 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionsPagerAdapter);
+        mSlidingTabLayout = (SlidingTabLayout) findViewById(R.id.sliding_tabs);
+        mSlidingTabLayout.setViewPager(mViewPager);
 
     }
 
@@ -97,6 +99,49 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        } else if(id == R.id.mi_delete_comunio) {
+            final List<Integer> mSelectedItems = new ArrayList();  // Where we track the selected items
+            String[] comunioNames = new String[userInfos.size()];
+            for (int i = 0; i<comunioNames.length; i++) {
+                comunioNames[i] = userInfos.get(i).getComunioName();
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            // Set the dialog title
+            builder.setTitle("Test")
+                    // Specify the list array, the items to be selected by default (null for none),
+                    // and the listener through which to receive callbacks when items are selected
+                    .setMultiChoiceItems(comunioNames, null,
+                            new DialogInterface.OnMultiChoiceClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which,
+                                                    boolean isChecked) {
+                                    if (isChecked) {
+                                        // If the user checked the item, add it to the selected items
+                                        mSelectedItems.add(which);
+                                    } else if (mSelectedItems.contains(which)) {
+                                        // Else, if the item is already in the array, remove it
+                                        mSelectedItems.remove(Integer.valueOf(which));
+                                    }
+                                }
+                            })
+                            // Set the action buttons
+                    .setPositiveButton("Löschen", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int id) {
+                            // User clicked OK, so save the mSelectedItems results somewhere
+                            // or return them to the component that opened the dialog
+                            mSectionsPagerAdapter.deleteTransferMarket(mSelectedItems);
+
+                        }
+                    })
+                    .setNegativeButton("Abbrechen", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int id) {
+
+                        }
+                    });
+
+            builder.create().show();
         } else if(id == R.id.mi_refresh) {
             mSectionsPagerAdapter.refreshTransferMarket(mViewPager.getCurrentItem());
         } else if(id == R.id.mi_add_comunio) {
@@ -126,6 +171,7 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
                         @Override
                         public void onGetComunioInfoFinished(int id, String name) {
                             mSectionsPagerAdapter.addTransferMarket(new UserInfo(userName, name, id));
+                            mSlidingTabLayout.setViewPager(mViewPager);
                             dia.dismiss();
                         }
 
@@ -209,6 +255,19 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
             notifyDataSetChanged();
             DailyTransferMarketActivity.this.saveUserInfos(userInfos);
 
+        }
+
+        public void deleteTransferMarket(List<Integer> positions) {
+            Collections.sort(positions);
+            Collections.reverse(positions);
+            for (Integer position : positions) {
+                int pos = position;
+                markets.remove(pos);
+                userInfos.remove(pos);
+                destroyItem();
+            }
+            notifyDataSetChanged();
+            DailyTransferMarketActivity.this.saveUserInfos(userInfos);
         }
 
         @Override

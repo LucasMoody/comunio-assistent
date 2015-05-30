@@ -1,8 +1,7 @@
-package lucaspradel.de.comunioassistent.dailytransfermarket.manager;
+package de.lucaspradel.comunioassistent.dailytransfermarket.manager;
 
 import android.os.AsyncTask;
 import android.support.v4.util.Pair;
-import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import lucaspradel.de.comunioassistent.dailytransfermarket.helper.PlayerInfo;
+import de.lucaspradel.comunioassistent.dailytransfermarket.helper.PlayerInfo;
 
 /**
  * Created by lucas on 03.04.15.
