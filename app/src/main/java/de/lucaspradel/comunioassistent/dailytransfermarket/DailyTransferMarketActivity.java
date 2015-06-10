@@ -1,27 +1,28 @@
 package de.lucaspradel.comunioassistent.dailytransfermarket;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.support.v7.app.ActionBarActivity;
+import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
-import android.os.Bundle;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import de.lucaspradel.comunioassistent.R;
 import de.lucaspradel.comunioassistent.common.view.SlidingTabLayout;
@@ -77,8 +78,8 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionsPagerAdapter);
-        mSlidingTabLayout = (SlidingTabLayout) findViewById(R.id.sliding_tabs);
-        mSlidingTabLayout.setViewPager(mViewPager);
+        //mSlidingTabLayout = (SlidingTabLayout) findViewById(R.id.sliding_tabs);
+        //mSlidingTabLayout.setViewPager(mViewPager);
 
     }
 
@@ -171,7 +172,7 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
                         @Override
                         public void onGetComunioInfoFinished(int id, String name) {
                             mSectionsPagerAdapter.addTransferMarket(new UserInfo(userName, name, id));
-                            mSlidingTabLayout.setViewPager(mViewPager);
+                            //mSlidingTabLayout.setViewPager(mViewPager);
                             dia.dismiss();
                         }
 
@@ -208,7 +209,7 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
      */
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
+    public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
         private List<TransferMarket> markets;
         private List<UserInfo> userInfos;
@@ -262,12 +263,21 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
             Collections.reverse(positions);
             for (Integer position : positions) {
                 int pos = position;
+                //destroyItem(mViewPager, position, markets.get(pos));
                 markets.remove(pos);
                 userInfos.remove(pos);
-                destroyItem();
             }
             notifyDataSetChanged();
             DailyTransferMarketActivity.this.saveUserInfos(userInfos);
+        }
+
+        @Override
+        public int getItemPosition(Object object) {
+            int index = markets.indexOf(object);
+            if (index == -1)
+                return POSITION_NONE;
+            else
+                return index;
         }
 
         @Override
