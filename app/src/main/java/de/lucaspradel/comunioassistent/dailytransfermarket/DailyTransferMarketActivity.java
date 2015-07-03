@@ -1,13 +1,9 @@
 package de.lucaspradel.comunioassistent.dailytransfermarket;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
@@ -17,9 +13,6 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,16 +21,12 @@ import de.lucaspradel.comunioassistent.R;
 import de.lucaspradel.comunioassistent.common.view.SlidingTabLayout;
 import de.lucaspradel.comunioassistent.dailytransfermarket.helper.UserInfo;
 import de.lucaspradel.comunioassistent.dailytransfermarket.manager.DailyTransferMarketManager;
+import de.lucaspradel.comunioassistent.dailytransfermarket.view.MarketPagerAdapter;
 import de.lucaspradel.comunioassistent.dailytransfermarket.view.TransferMarket;
 
 
 public class DailyTransferMarketActivity extends ActionBarActivity implements TransferMarket.OnFragmentInteractionListener {
 
-    public static final String COMUNIO_IDS = "comunioIds";
-    public static final String SEPARATOR = ",";
-    public static final String COMUNIO_USER_INFOS_FILENAME = "comunioUserInfos";
-
-    private List<UserInfo> userInfos;
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
      * fragments for each of the sections. We use a
@@ -46,7 +35,7 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
      * may be best to switch to a
      * {@link android.support.v4.app.FragmentStatePagerAdapter}.
      */
-    SectionsPagerAdapter mSectionsPagerAdapter;
+    MarketPagerAdapter mMarketPagerAdapter;
 
     /**
      * The {@link ViewPager} that will host the section contents.
@@ -62,24 +51,17 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
         setContentView(R.layout.activity_daily_transfer_market);
 
         dailyTransferMarketManager = new DailyTransferMarketManager();
-        userInfos = new ArrayList<>();
-        try {
-            ObjectInputStream ois = new ObjectInputStream(openFileInput(COMUNIO_USER_INFOS_FILENAME));
-            userInfos = (List<UserInfo>) ois.readObject();
-            ois.close();
-        } catch (IOException | ClassNotFoundException e) {
 
-        }
 
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), userInfos);
+        mMarketPagerAdapter = new MarketPagerAdapter(this, getSupportFragmentManager());
 
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
-        mViewPager.setAdapter(mSectionsPagerAdapter);
-        //mSlidingTabLayout = (SlidingTabLayout) findViewById(R.id.sliding_tabs);
-        //mSlidingTabLayout.setViewPager(mViewPager);
+        mViewPager.setAdapter(mMarketPagerAdapter);
+        mSlidingTabLayout = (SlidingTabLayout) findViewById(R.id.sliding_tabs);
+        mSlidingTabLayout.setViewPager(mViewPager);
 
     }
 
@@ -102,6 +84,7 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
             return true;
         } else if(id == R.id.mi_delete_comunio) {
             final List<Integer> mSelectedItems = new ArrayList();  // Where we track the selected items
+            List<UserInfo> userInfos = mMarketPagerAdapter.getUserInfos();
             String[] comunioNames = new String[userInfos.size()];
             for (int i = 0; i<comunioNames.length; i++) {
                 comunioNames[i] = userInfos.get(i).getComunioName();
@@ -131,7 +114,13 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
                         public void onClick(DialogInterface dialog, int id) {
                             // User clicked OK, so save the mSelectedItems results somewhere
                             // or return them to the component that opened the dialog
-                            mSectionsPagerAdapter.deleteTransferMarket(mSelectedItems);
+                            Collections.sort(mSelectedItems, Collections.reverseOrder());
+                            for (int deletedItemIndex : mSelectedItems) {
+                                mMarketPagerAdapter.removeFragment(deletedItemIndex);
+
+                            }
+                            mSlidingTabLayout.setViewPager(mViewPager);
+                            mMarketPagerAdapter.saveUserInfos();
 
                         }
                     })
@@ -144,7 +133,8 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
 
             builder.create().show();
         } else if(id == R.id.mi_refresh) {
-            mSectionsPagerAdapter.refreshTransferMarket(mViewPager.getCurrentItem());
+            ((TransferMarket) mMarketPagerAdapter.getFragment(mViewPager.getCurrentItem())).updateTransferMarket();
+
         } else if(id == R.id.mi_add_comunio) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             LayoutInflater inflater = getLayoutInflater();
@@ -171,8 +161,9 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
                     dailyTransferMarketManager.setGetComunioInfoFinishedListener(new DailyTransferMarketManager.GetComunioInfoFinishedListener() {
                         @Override
                         public void onGetComunioInfoFinished(int id, String name) {
-                            mSectionsPagerAdapter.addTransferMarket(new UserInfo(userName, name, id));
-                            //mSlidingTabLayout.setViewPager(mViewPager);
+                            mMarketPagerAdapter.addTransferMarket(userName, name, id);
+
+                            mSlidingTabLayout.setViewPager(mViewPager);
                             dia.dismiss();
                         }
 
@@ -192,103 +183,6 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
     @Override
     public void onFragmentInteraction(String id) {
 
-    }
-
-    private void saveUserInfos(List<UserInfo> userInfos) {
-        try {
-            ObjectOutputStream oos = new ObjectOutputStream(openFileOutput(COMUNIO_USER_INFOS_FILENAME, Context.MODE_PRIVATE));
-            oos.writeObject(userInfos);
-            oos.close();
-        } catch (IOException e) {
-            Toast.makeText(this, "Saving of comunio user was not succesful. Please contact the vendor.", Toast.LENGTH_LONG).show();
-        }
-    }
-
-
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
-    public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
-
-        private List<TransferMarket> markets;
-        private List<UserInfo> userInfos;
-
-        private class ViewHolder {
-            private final TransferMarket transferMarket;
-
-            protected ViewHolder(TransferMarket transferMarket) {
-                this.transferMarket = transferMarket;
-            }
-
-            public TransferMarket getTransferMarket() {
-                return transferMarket;
-            }
-        }
-
-        public SectionsPagerAdapter(FragmentManager fm, List<UserInfo> userInfos) {
-            super(fm);
-            markets = new ArrayList<>();
-            this.userInfos = userInfos;
-            for (UserInfo ui : userInfos) {
-                //TODO Anzahl Tage und OnlyShowComputer konfigurierbar machen
-                markets.add(TransferMarket.newInstance(ui.getId(),90,true));
-            }
-        }
-
-        public void refreshTransferMarket(int position) {
-            markets.get(position).updateTransferMarket();
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            //return PlaceholderFragment.newInstance(position + 1);
-
-            return markets.get(position);
-        }
-
-        public void addTransferMarket(UserInfo userInfo) {
-            //TODO Anzahl Tage und OnlyShowComputer konfigurierbar machen
-            markets.add(TransferMarket.newInstance(userInfo.getId(), 90, true));
-            userInfos.add(userInfo);
-            notifyDataSetChanged();
-            DailyTransferMarketActivity.this.saveUserInfos(userInfos);
-
-        }
-
-        public void deleteTransferMarket(List<Integer> positions) {
-            Collections.sort(positions);
-            Collections.reverse(positions);
-            for (Integer position : positions) {
-                int pos = position;
-                //destroyItem(mViewPager, position, markets.get(pos));
-                markets.remove(pos);
-                userInfos.remove(pos);
-            }
-            notifyDataSetChanged();
-            DailyTransferMarketActivity.this.saveUserInfos(userInfos);
-        }
-
-        @Override
-        public int getItemPosition(Object object) {
-            int index = markets.indexOf(object);
-            if (index == -1)
-                return POSITION_NONE;
-            else
-                return index;
-        }
-
-        @Override
-        public int getCount() {
-            return markets.size();
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            return userInfos.get(position).getComunioName();
-        }
     }
 
 }

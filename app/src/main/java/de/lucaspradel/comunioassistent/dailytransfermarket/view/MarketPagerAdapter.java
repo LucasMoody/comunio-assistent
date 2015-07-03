@@ -1,121 +1,233 @@
 package de.lucaspradel.comunioassistent.dailytransfermarket.view;
 
+import android.content.Context;
+import android.os.Parcelable;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.List;
+
+import de.lucaspradel.comunioassistent.dailytransfermarket.helper.UserInfo;
 
 /**
  * Created by lucas on 10.06.15.
  */
 public class MarketPagerAdapter extends PagerAdapter {
 
-    protected ArrayList<View> views = new ArrayList<>();
+    private static final String COMUNIO_USER_INFOS_FILENAME = "comunioUserInfos";
+    List<UserInfo> userInfos;
 
-    //-----------------------------------------------------------------------------
-    // Used by ViewPager.  "Object" represents the page; tell the ViewPager where the
-    // page should be displayed, from left-to-right.  If the page no longer exists,
-    // return POSITION_NONE.
+    private static final String TAG = "MarketPagerAdapter";
+    private static final boolean DEBUG = false;
+
+    private final FragmentManager mFragmentManager;
+    private FragmentTransaction mCurTransaction = null;
+    private Fragment mCurrentPrimaryItem = null;
+    Context context;
+
+    protected ArrayList<Fragment> fragments = new ArrayList<>();
+
+    public MarketPagerAdapter(Context context, FragmentManager fm) {
+        this.context = context;
+        mFragmentManager = fm;
+
+        loadUserInfos();
+        for (UserInfo ui : userInfos) {
+            addFragment(TransferMarket.newInstance(ui.getId(), 90, true));
+        }
+    }
+
+    private void loadUserInfos() {
+        userInfos = new ArrayList<>();
+        try {
+            ObjectInputStream ois = new ObjectInputStream(context.openFileInput(COMUNIO_USER_INFOS_FILENAME));
+            userInfos = (List<UserInfo>) ois.readObject();
+            ois.close();
+        } catch (IOException | ClassNotFoundException e) {
+
+        }
+    }
+
+    public void saveUserInfos() {
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(context.openFileOutput(COMUNIO_USER_INFOS_FILENAME, Context.MODE_PRIVATE));
+            oos.writeObject(userInfos);
+            oos.close();
+        } catch (IOException e) {
+            Toast.makeText(context, "Saving of comunio user was not succesful. Please contact the vendor.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public List<UserInfo> getUserInfos() {
+        return userInfos;
+    }
+
+    /**
+     * Return the Fragment associated with a specified position.
+     */
+    public Fragment getItem(int position) {
+        return fragments.get(position);
+    }
+
+    ;
+
     @Override
     public int getItemPosition(Object object) {
-        int index = views.indexOf(object);
+        int index = fragments.indexOf(object);
         if (index == -1)
             return POSITION_NONE;
         else
             return index;
     }
 
-    //-----------------------------------------------------------------------------
-    // Used by ViewPager.  Called when ViewPager needs a page to display; it is our job
-    // to add the page to the container, which is normally the ViewPager itself.  Since
-    // all our pages are persistent, we simply retrieve it from our "views" ArrayList.
-    @Override
-    public Object instantiateItem(ViewGroup container, int position) {
-        View v = views.get(position);
-        container.addView(v);
-        return v;
-    }
-
-    //-----------------------------------------------------------------------------
-    // Used by ViewPager.  Called when ViewPager no longer needs a page to display; it
-    // is our job to remove the page from the container, which is normally the
-    // ViewPager itself.  Since all our pages are persistent, we do nothing to the
-    // contents of our "views" ArrayList.
-    @Override
-    public void destroyItem(ViewGroup container, int position, Object object) {
-        container.removeView(views.get(position));
-    }
-
-    //-----------------------------------------------------------------------------
-    // Used by ViewPager; can be used by app as well.
-    // Returns the total number of pages that the ViewPage can display.  This must
-    // never be 0.
     @Override
     public int getCount() {
-        return views.size();
+        return fragments.size();
     }
 
-    //-----------------------------------------------------------------------------
-    // Used by ViewPager.
+    @Override
+    public void startUpdate(ViewGroup container) {
+    }
+
+    @Override
+    public Object instantiateItem(ViewGroup container, int position) {
+        if (mCurTransaction == null) {
+            mCurTransaction = mFragmentManager.beginTransaction();
+        }
+
+        final long itemId = getItemId(position);
+
+        // Do we already have this fragment?
+        String name = makeFragmentName(container.getId(), itemId);
+        Fragment fragment = mFragmentManager.findFragmentByTag(name);
+        if (fragment != null) {
+            if (DEBUG) Log.v(TAG, "Attaching item #" + itemId + ": f=" + fragment);
+            mCurTransaction.attach(fragment);
+        } else {
+            fragment = getItem(position);
+            if (DEBUG) Log.v(TAG, "Adding item #" + itemId + ": f=" + fragment);
+            mCurTransaction.add(container.getId(), fragment,
+                    makeFragmentName(container.getId(), itemId));
+        }
+        if (fragment != mCurrentPrimaryItem) {
+            fragment.setMenuVisibility(false);
+            fragment.setUserVisibleHint(false);
+        }
+
+        return fragment;
+    }
+
+    @Override
+    public void destroyItem(ViewGroup container, int position, Object object) {
+        if (mCurTransaction == null) {
+            mCurTransaction = mFragmentManager.beginTransaction();
+        }
+        if (DEBUG) Log.v(TAG, "Detaching item #" + getItemId(position) + ": f=" + object
+                + " v=" + ((Fragment) object).getView());
+        mCurTransaction.detach((Fragment) object);
+    }
+
+    public void removeFragment(int position) {
+        if (mCurTransaction == null) {
+            mCurTransaction = mFragmentManager.beginTransaction();
+        }
+        if (DEBUG)
+            Log.v(TAG, "Removing item #" + getItemId(position) + ": f=" + fragments.get(position)
+                    + " v=" + fragments.get(position).getView());
+        mCurTransaction.remove(fragments.get(position));
+        fragments.remove(position);
+        notifyDataSetChanged();
+        userInfos.remove(position);
+    }
+
+    public void addTransferMarket(String userName, String name, int id) {
+        UserInfo userInfo = new UserInfo(userName, name, id);
+        addFragment(TransferMarket.newInstance(userInfo.getId(), 90, true));
+        userInfos.add(userInfo);
+        saveUserInfos();
+    }
+
+    public void addFragment(Fragment f) {
+        addFragment(f, fragments.size());
+    }
+
+    public void addFragment(Fragment f, int position) {
+        fragments.add(position, f);
+        notifyDataSetChanged();
+    }
+
+    public Fragment getFragment(int position) {
+        return fragments.get(position);
+    }
+
+    @Override
+    public void setPrimaryItem(ViewGroup container, int position, Object object) {
+        Fragment fragment = (Fragment) object;
+        if (fragment != mCurrentPrimaryItem) {
+            if (mCurrentPrimaryItem != null) {
+                mCurrentPrimaryItem.setMenuVisibility(false);
+                mCurrentPrimaryItem.setUserVisibleHint(false);
+            }
+            if (fragment != null) {
+                fragment.setMenuVisibility(true);
+                fragment.setUserVisibleHint(true);
+            }
+            mCurrentPrimaryItem = fragment;
+        }
+    }
+
+    @Override
+    public void finishUpdate(ViewGroup container) {
+        if (mCurTransaction != null) {
+            mCurTransaction.commitAllowingStateLoss();
+            mCurTransaction = null;
+            mFragmentManager.executePendingTransactions();
+        }
+    }
+
     @Override
     public boolean isViewFromObject(View view, Object object) {
-        return view == object;
+        return ((Fragment) object).getView() == view;
     }
 
-    //-----------------------------------------------------------------------------
-    // Add "view" to right end of "views".
-    // Returns the position of the new view.
-    // The app should call this to add pages; not used by ViewPager.
-    public int addView(View v) {
-        return addView(v, views.size());
+    @Override
+    public Parcelable saveState() {
+        return null;
     }
 
-    //-----------------------------------------------------------------------------
-    // Add "view" at "position" to "views".
-    // Returns position of new view.
-    // The app should call this to add pages; not used by ViewPager.
-    public int addView(View v, int position) {
-        views.add(position, v);
+    @Override
+    public void restoreState(Parcelable state, ClassLoader loader) {
+    }
+
+    /**
+     * Return a unique identifier for the item at the given position.
+     * <p/>
+     * <p>The default implementation returns the given position.
+     * Subclasses should override this method if the positions of items can change.</p>
+     *
+     * @param position Position within this adapter
+     * @return Unique identifier for the item at position
+     */
+    public long getItemId(int position) {
         return position;
     }
 
-    //-----------------------------------------------------------------------------
-    // Removes "view" from "views".
-    // Retuns position of removed view.
-    // The app should call this to remove pages; not used by ViewPager.
-    public int removeView(ViewPager pager, View v) {
-        return removeView(pager, views.indexOf(v));
+    private static String makeFragmentName(int viewId, long id) {
+        return "android:switcher:" + viewId + ":" + id;
     }
 
-    //-----------------------------------------------------------------------------
-    // Removes the "view" at "position" from "views".
-    // Retuns position of removed view.
-    // The app should call this to remove pages; not used by ViewPager.
-    public int removeView(ViewPager pager, int position) {
-        // ViewPager doesn't have a delete method; the closest is to set the adapter
-        // again.  When doing so, it deletes all its views.  Then we can delete the view
-        // from from the adapter and finally set the adapter to the pager again.  Note
-        // that we set the adapter to null before removing the view from "views" - that's
-        // because while ViewPager deletes all its views, it will call destroyItem which
-        // will in turn cause a null pointer ref.
-        pager.setAdapter(null);
-        views.remove(position);
-        pager.setAdapter(this);
-
-        return position;
+    @Override
+    public CharSequence getPageTitle(int position) {
+        return userInfos.get(position).getComunioName();
     }
-
-    //-----------------------------------------------------------------------------
-    // Returns the "view" at "position".
-    // The app should call this to retrieve a view; not used by ViewPager.
-    public View getView(int position) {
-        return views.get(position);
-    }
-
-    // Other relevant methods:
-
-    // finishUpdate - called by the ViewPager - we don't care about what pages the
-    // pager is displaying so we don't use this method.
 }
