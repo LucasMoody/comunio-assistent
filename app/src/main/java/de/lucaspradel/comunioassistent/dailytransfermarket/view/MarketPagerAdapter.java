@@ -9,15 +9,12 @@ import android.support.v4.view.PagerAdapter;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import de.lucaspradel.comunioassistent.dailytransfermarket.helper.UserInfo;
+import de.lucaspradel.comunioassistent.dailytransfermarket.manager.UserInfoManger;
 
 /**
  * Created by lucas on 10.06.15.
@@ -26,6 +23,7 @@ public class MarketPagerAdapter extends PagerAdapter {
 
     private static final String COMUNIO_USER_INFOS_FILENAME = "comunioUserInfos";
     List<UserInfo> userInfos;
+    UserInfoManger userInfoManger;
 
     private static final String TAG = "MarketPagerAdapter";
     private static final boolean DEBUG = false;
@@ -40,32 +38,16 @@ public class MarketPagerAdapter extends PagerAdapter {
     public MarketPagerAdapter(Context context, FragmentManager fm) {
         this.context = context;
         mFragmentManager = fm;
+        userInfoManger = new UserInfoManger(context);
 
-        loadUserInfos();
+        userInfos = userInfoManger.loadUserInfos();
         for (UserInfo ui : userInfos) {
             addFragment(TransferMarket.newInstance(ui.getId(), 90, true));
         }
     }
 
-    private void loadUserInfos() {
-        userInfos = new ArrayList<>();
-        try {
-            ObjectInputStream ois = new ObjectInputStream(context.openFileInput(COMUNIO_USER_INFOS_FILENAME));
-            userInfos = (List<UserInfo>) ois.readObject();
-            ois.close();
-        } catch (IOException | ClassNotFoundException e) {
-
-        }
-    }
-
     public void saveUserInfos() {
-        try {
-            ObjectOutputStream oos = new ObjectOutputStream(context.openFileOutput(COMUNIO_USER_INFOS_FILENAME, Context.MODE_PRIVATE));
-            oos.writeObject(userInfos);
-            oos.close();
-        } catch (IOException e) {
-            Toast.makeText(context, "Saving of comunio user was not succesful. Please contact the vendor.", Toast.LENGTH_LONG).show();
-        }
+        userInfoManger.saveUserInfos(userInfos);
     }
 
     public List<UserInfo> getUserInfos() {

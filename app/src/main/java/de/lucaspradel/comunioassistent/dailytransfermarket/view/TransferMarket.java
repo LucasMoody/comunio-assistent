@@ -9,13 +9,11 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
-import android.widget.ListAdapter;
 import android.widget.TextView;
 
 import java.util.List;
 
 import de.lucaspradel.comunioassistent.R;
-
 import de.lucaspradel.comunioassistent.dailytransfermarket.helper.PlayerInfo;
 import de.lucaspradel.comunioassistent.dailytransfermarket.manager.DailyTransferMarketManager;
 
@@ -82,7 +80,7 @@ public class TransferMarket extends Fragment implements AbsListView.OnItemClickL
         days = bundle.getInt(ARG_DAYS);
         onlyFromComputer = bundle.getBoolean(ARG_ONLY_FROM_COMPUTER);
         mAdapter = new PlayerInfoListAdapter(getActivity());
-        dailyTransferManager = new DailyTransferMarketManager().
+        dailyTransferManager = new DailyTransferMarketManager(getActivity()).
                 setDailyTransferMarketFinishedListener(
                         new DailyTransferMarketManager.DailyTransferMarketFinishedListener() {
                             @Override

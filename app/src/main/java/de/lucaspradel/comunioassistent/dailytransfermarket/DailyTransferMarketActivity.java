@@ -1,7 +1,10 @@
 package de.lucaspradel.comunioassistent.dailytransfermarket;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -23,6 +26,7 @@ import de.lucaspradel.comunioassistent.dailytransfermarket.helper.UserInfo;
 import de.lucaspradel.comunioassistent.dailytransfermarket.manager.DailyTransferMarketManager;
 import de.lucaspradel.comunioassistent.dailytransfermarket.view.MarketPagerAdapter;
 import de.lucaspradel.comunioassistent.dailytransfermarket.view.TransferMarket;
+import de.lucaspradel.comunioassistent.receiver.BootReceiver;
 
 
 public class DailyTransferMarketActivity extends ActionBarActivity implements TransferMarket.OnFragmentInteractionListener {
@@ -45,12 +49,15 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
     private DailyTransferMarketManager dailyTransferMarketManager;
     private SlidingTabLayout mSlidingTabLayout;
 
+    private static final String KEY_PREFS_FIRST_LAUNCH = "first_launch";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initRecurringAlarm();
         setContentView(R.layout.activity_daily_transfer_market);
 
-        dailyTransferMarketManager = new DailyTransferMarketManager();
+        dailyTransferMarketManager = new DailyTransferMarketManager(this);
 
 
         // Create the adapter that will return a fragment for each of the three
@@ -62,7 +69,17 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
         mViewPager.setAdapter(mMarketPagerAdapter);
         mSlidingTabLayout = (SlidingTabLayout) findViewById(R.id.sliding_tabs);
         mSlidingTabLayout.setViewPager(mViewPager);
+    }
 
+    private void initRecurringAlarm() {
+        SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
+        prefs.edit().putBoolean(KEY_PREFS_FIRST_LAUNCH, true).commit();
+        if (prefs.getBoolean(KEY_PREFS_FIRST_LAUNCH, true)) {
+            //first launch
+            Intent bootIntent = new Intent(this, BootReceiver.class);
+            sendBroadcast(bootIntent);
+            prefs.edit().putBoolean(KEY_PREFS_FIRST_LAUNCH, false).commit();
+        }
     }
 
     @Override
@@ -133,6 +150,7 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
 
             builder.create().show();
         } else if(id == R.id.mi_refresh) {
+            dailyTransferMarketManager.deleteTransferMarketCache(String.valueOf(mMarketPagerAdapter.getUserInfos().get(mViewPager.getCurrentItem()).getId()));
             ((TransferMarket) mMarketPagerAdapter.getFragment(mViewPager.getCurrentItem())).updateTransferMarket();
 
         } else if(id == R.id.mi_add_comunio) {
