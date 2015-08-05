@@ -34,6 +34,6 @@ public class BootReceiver extends BroadcastReceiver {
                 Context.ALARM_SERVICE);
         alarms.setInexactRepeating(AlarmManager.RTC_WAKEUP,
                 updateTime.getTimeInMillis(),
-                AlarmManager.INTERVAL_FIFTEEN_MINUTES, recurringDownload);
+                AlarmManager.INTERVAL_DAY, recurringDownload);
     }
 }

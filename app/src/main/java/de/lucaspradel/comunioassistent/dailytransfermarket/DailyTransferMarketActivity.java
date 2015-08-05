@@ -73,7 +73,6 @@ public class DailyTransferMarketActivity extends ActionBarActivity implements Tr
 
     private void initRecurringAlarm() {
         SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
-        prefs.edit().putBoolean(KEY_PREFS_FIRST_LAUNCH, true).commit();
         if (prefs.getBoolean(KEY_PREFS_FIRST_LAUNCH, true)) {
             //first launch
             Intent bootIntent = new Intent(this, BootReceiver.class);

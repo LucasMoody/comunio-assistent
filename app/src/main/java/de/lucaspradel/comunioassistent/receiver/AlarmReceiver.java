@@ -61,12 +61,18 @@ public class AlarmReceiver extends BroadcastReceiver implements DailyTransferMar
                         resultIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT
                 );
+        String notificationText = notificationText(transferMarkets, userInfos);
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(context)
-                        .setContentTitle("My notification")
+                        .setContentTitle("Moin")
                         .setSmallIcon(R.drawable.ic_menu_add)
-                        .setContentText(notificationText(transferMarkets, userInfos));
+                        .setContentText(notificationText);
+        NotificationCompat.BigTextStyle inboxStyle =
+                new NotificationCompat.BigTextStyle();
+        inboxStyle.bigText(notificationText(transferMarkets, userInfos));
+        mBuilder.setStyle(inboxStyle);
         mBuilder.setContentIntent(resultPendingIntent);
+        mBuilder.setAutoCancel(true);
         // Sets an ID for the notification
         int mNotificationId = 001;
         // Gets an instance of the NotificationManager service
@@ -78,23 +84,73 @@ public class AlarmReceiver extends BroadcastReceiver implements DailyTransferMar
 
     private String notificationText(List<List<PlayerInfo>> transferMarkets, List<UserInfo> userInfos) {
         StringBuilder contextText = new StringBuilder();
-        int treshold = 1000000;
-        contextText.append("Moin! Heute sind Kracher wie ");
-        String delimiter = "";
-        String comunioDelimiter = "";
-        for (int i = 0; i < transferMarkets.size(); i++) {
-            List<PlayerInfo> curTransferMarket = transferMarkets.get(i);
-            UserInfo curUserInfo = userInfos.get(i);
-            contextText.append(comunioDelimiter);
-            for (int j = 0; j < curTransferMarket.size(); j++) {
-                PlayerInfo curPlayer = curTransferMarket.get(j);
-                if (curPlayer.getMarketValue() >= treshold) {
-                    contextText.append(delimiter).append(curPlayer.getName());
-                    delimiter = ", ";
+        int treshold = 4000000;
+        List<List<PlayerInfo>> filteredTransferMarketsOverThreshold = new ArrayList<>();
+        List<UserInfo> comuniosWithPlayersOverThreshold = new ArrayList<>();
+        List<UserInfo> comuniosWithPlayersUnderThreshold = new ArrayList<>();
+        int counter = 0;
+        for (List<PlayerInfo> transfermarket : transferMarkets) {
+            List<PlayerInfo> filteredMarket = new ArrayList<>();
+            for (PlayerInfo player : transfermarket) {
+                if (player.getMarketValue() >= treshold) {
+                    filteredMarket.add(player);
                 }
             }
-            contextText.append(" bei ").append(curUserInfo.getComunioName());
-            comunioDelimiter = " und ";
+            if (filteredMarket.size() > 0) {
+                filteredTransferMarketsOverThreshold.add(filteredMarket);
+                comuniosWithPlayersOverThreshold.add(userInfos.get(counter));
+            } else {
+                comuniosWithPlayersUnderThreshold.add(userInfos.get(counter));
+            }
+            counter++;
+        }
+        // No market with players over threshold
+        if (comuniosWithPlayersOverThreshold.size() == 0) {
+            contextText.append("Heute sind leider keine Kracher auf den Märkten.");
+        }
+        // only markets with players over threshold
+        else if (comuniosWithPlayersUnderThreshold.size() == 0 && comuniosWithPlayersOverThreshold.size() > 0) {
+            contextText.append("Heute sind Kracher wie ");
+            String delimiter = "";
+            String comunioDelimiter = "";
+            for (int i = 0; i < comuniosWithPlayersOverThreshold.size(); i++) {
+                contextText.append(comunioDelimiter);
+                List<PlayerInfo> curTransferMarket = filteredTransferMarketsOverThreshold.get(i);
+                for (int j = 0; j < curTransferMarket.size(); j++) {
+                    contextText.append(delimiter).append(curTransferMarket.get(j).getName());
+                    delimiter = ", ";
+                }
+                contextText.append(" bei ").append(comuniosWithPlayersOverThreshold.get(i).getComunioName());
+                comunioDelimiter = " und ";
+                delimiter = "";
+            }
+            contextText.append(" auf dem Transfermarkt.");
+        }
+        // markets with player under and over threshold
+        else {
+            contextText.append("Heute sind Kracher wie ");
+            String delimiter = "";
+            String comunioDelimiter = "";
+            for (int i = 0; i < comuniosWithPlayersOverThreshold.size(); i++) {
+                contextText.append(comunioDelimiter);
+                List<PlayerInfo> curTransferMarket = filteredTransferMarketsOverThreshold.get(i);
+                for (int j = 0; j < curTransferMarket.size(); j++) {
+                    contextText.append(delimiter).append(curTransferMarket.get(j).getName());
+                    delimiter = ", ";
+                }
+                contextText.append(" bei ").append(comuniosWithPlayersOverThreshold.get(i).getComunioName());
+                comunioDelimiter = " und ";
+                delimiter = "";
+            }
+            contextText.append(" auf dem Transfermarkt.");
+            contextText.append("\nLeider sind keine Kracher bei ");
+            comunioDelimiter = "";
+            for (int i = 0; i < comuniosWithPlayersUnderThreshold.size(); i++) {
+                contextText.append(comunioDelimiter).append(comuniosWithPlayersUnderThreshold.get(i).getComunioName());
+                comunioDelimiter = " , ";
+            }
+            contextText.append(" zu finden.");
+
         }
         return contextText.toString();
     }
